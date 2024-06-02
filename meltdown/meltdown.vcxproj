@@ -108,6 +108,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalOptions>/EHa %(AdditionalOptions)</AdditionalOptions>
       <BufferSecurityCheck>false</BufferSecurityCheck>
+      <ExceptionHandling>Sync</ExceptionHandling>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

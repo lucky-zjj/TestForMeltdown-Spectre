@@ -9,7 +9,6 @@
 #define NUM_READS 100  //受害者线程连续读取密码次数。
 #define PROCESSOR_AFFINITY_CORE0 1 // 假设第一个CPU核心的掩码是1  
 
-
 uint8_t probe_array[256][4096];
 uint64_t access_time[256];
 
