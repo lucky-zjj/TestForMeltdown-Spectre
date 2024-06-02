@@ -6,7 +6,7 @@
 #include <Windows.h>
 #include <stdlib.h>  
 
-int special_attack = 1;
+int special_attack = 0;
 char* secret = "password!";
 uint8_t known_data[10] = { 0,1,2,3,4,5,6,7,8,9 };
 uint8_t legal_size = 10;
@@ -78,7 +78,8 @@ uint8_t Steal(size_t interst)
             _mm_pause();
         }
 
-        if (access_time[idx_min] < 100 && idx_min != 0 && idx_min >= 32 && idx_min <= 126)
+        if (access_time[idx_min] < 100 && idx_min != 0 && 
+            idx_min >= 32 && idx_min <= 126)//32 到 126是ASCII可打印字符
         {
             printf(" => %02X retries=%-5zd access_time=%llu\n"
                 , (uint32_t)idx_min
